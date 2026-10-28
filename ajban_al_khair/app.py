@@ -124,18 +124,7 @@ def init_db():
             cursor.execute("INSERT OR IGNORE INTO categories (name, type, display_order) VALUES (?, 'masrouf', ?)", (name, idx))
         conn.commit()
 
-    # Check if empty, populate initial realistic sample data
-    cursor.execute("SELECT COUNT(*) as count FROM transactions")
-    count = cursor.fetchone()["count"]
-    if count == 0:
-        seed_sample_data(cursor)
-        conn.commit()
-
-    cursor.execute("SELECT COUNT(*) as count FROM kounach")
-    if cursor.fetchone()["count"] == 0:
-        seed_kounach_sample(cursor)
-        conn.commit()
-
+    # Keep transactions and kounach clean starting from 0 DH
     conn.close()
 
 def seed_kounach_sample(cursor):
