@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#064e3b">
+  <meta name="description" content="نظام إدارة المداخيل والمصاريف - تعاونية أجبان الخير لإنتاج الحليب والأجبان التقليدية">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="أجبان الخير">
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="icon" type="image/png" href="/static/assets/icon-192.png">
+  <link rel="apple-touch-icon" href="/static/assets/icon-192.png">
+
+  <title>تعاونية أجبان الخير | إدارة المداخيل والمصاريف</title>
+
+  <!-- Google Fonts: Cairo & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons (Vendored locally for 100% offline support) -->
+  <link rel="stylesheet" href="/static/vendor/fontawesome/all.min.css">
+
+  <!-- Chart.js (Vendored locally for 100% offline support) -->
+  <script src="/static/vendor/chart.umd.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Live Code / App Update Notification Banner -->
+  <div class="app-update-banner" id="appUpdateBanner" style="display: none;">
+    <div class="aub-content">
+      <div class="aub-icon-circle">
+        <i class="fa-solid fa-arrows-rotate fa-spin"></i>
+      </div>
+      <div class="aub-text">
+        <strong>تحديث جديد متوفر للبرنامج! ✨</strong>
+        <p>تم تحديث النظام من الحاسوب. اضغط هنا لتطبيق التحديث فـ التيليفون فورياً.</p>
+      </div>
+    </div>
+    <div class="aub-actions">
+      <button class="btn btn-primary btn-sm" id="btnApplyUpdate">
+        <i class="fa-solid fa-rotate"></i> تحديث الآن (Mettre à jour)
+      </button>
+      <button class="btn-close-banner" id="btnCloseUpdateBanner">&times;</button>
+    </div>
+  </div>
+
+  <!-- Mobile PWA Install Floating Banner -->
+  <div class="mobile-install-banner" id="mobileInstallBanner" style="display: none;">
+    <div class="mib-content">
+      <img src="/static/assets/icon-192.png" alt="أجبان الخير" class="mib-logo">
+      <div class="mib-text">
+        <strong>تثبيت "أجبان الخير" فـ الهاتف 📱</strong>
+        <p>خدم به كـ تطبيق حقيقي سريع ومستقل بلا متصفح!</p>
+      </div>
+    </div>
+    <div class="mib-actions">
+      <button class="btn btn-primary btn-sm" id="btnInstallApp">
+        <i class="fa-solid fa-download"></i> تثبيت App
+      </button>
+      <button class="btn-close-banner" id="btnCloseInstallBanner">&times;</button>
+    </div>
+  </div>
+
+  <!-- Offline Status & Sync Alert Banner (Hors-Ligne) -->
+  <div class="offline-status-banner" id="offlineStatusBar" style="display: none;">
+    <div class="osb-content">
+      <div class="osb-icon-circle">
+        <i class="fa-solid fa-wifi-slash"></i>
+      </div>
+      <div class="osb-text">
+        <strong>وضع العمل بدون اتصال (Mode Hors-ligne) 📡</strong>
+        <p>التطبيق شغال 100%! سجل المداخيل والمصاريف عادي، وكلشي محفوظ فـ التيليفون وغادي يتزامن أوتوماتيكياً غير ترجع الكونيكسيون.</p>
+      </div>
+    </div>
+    <div class="osb-badge" id="offlineQueueBadge">
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+      <span id="offlineQueueCount">0</span> فـ الانتظار
+    </div>
+  </div>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+
+    <!-- Top Navigation Header -->
+    <header class="main-header">
+      <div class="header-content">
+        <div class="brand-group">
+          <img src="/static/assets/logo.jpg" alt="شعار تعاونية أجبان الخير" class="brand-logo">
+          <div class="brand-titles">
+            <h1 class="brand-name">تعاونية أجبان الخير</h1>
+            <p class="brand-sub">Coopérative Ajban Al Khair &bull; الحسابات والمصاريف</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- Connection Status Pill -->
+          <div class="connection-pill online" id="connectionPill" title="حالة الاتصال بالسيرفر">
+            <span class="status-dot"></span>
+            <span class="status-text" id="connectionPillText">متصل (En ligne)</span>
+          </div>
+
+          <!-- Install App Button (Visible on supported devices) -->
+          <button class="btn btn-glass btn-install-app pulse-btn" id="btnNavInstallApp" style="display: none;" title="تثبيت التطبيق على جهازك">
+            <i class="fa-solid fa-download"></i>
+            <span class="btn-text">تثبيت App</span>
+          </button>
+
+          <!-- Mobile Connect Button -->
+          <button class="btn btn-glass" id="btnOpenMobileModal" title="فتح التطبيق في الهاتف">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+            <span class="btn-text">فتح فـ التيليفون</span>
+          </button>
+
+          <!-- Kounach Button -->
+          <button class="btn btn-glass btn-kounach-top" id="btnOpenKounachModal" title="كناش الكريدي والديون">
+            <i class="fa-solid fa-book-bookmark"></i>
+            <span class="btn-text">كناش الكريدي</span>
+            <span class="nav-kounach-pill" id="navKounachBadge">0 DH</span>
+          </button>
+
+          <!-- Manage Categories Button -->
+          <button class="btn btn-glass" id="btnOpenCatModal" title="إدارة وحذف الأصناف">
+            <i class="fa-solid fa-tags"></i>
+            <span class="btn-text">إدارة الأصناف</span>
+          </button>
+
+          <!-- Export CSV -->
+          <button class="btn btn-glass" id="btnExportCSV" title="تحميل التقرير Excel/CSV">
+            <i class="fa-solid fa-file-excel"></i>
+            <span class="btn-text">تصدير CSV</span>
+          </button>
+
+          <!-- Theme Toggle -->
+          <button class="btn btn-icon btn-glass" id="btnThemeToggle" title="تبديل الوضع الليلي/النهاري">
+            <i class="fa-solid fa-sun" id="themeIcon"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Dashboard Body -->
+    <main class="dashboard-body">
+
+      <!-- Period Filter Bar -->
+      <section class="period-section">
+        <div class="period-pills" id="periodPills">
+          <button class="period-pill active" data-period="today">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span>اليوم (Aujourd'hui)</span>
+          </button>
+          <button class="period-pill" data-period="yesterday">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>البارح (Hier)</span>
+          </button>
+          <button class="period-pill" data-period="week">
+            <i class="fa-solid fa-calendar-week"></i>
+            <span>هاد السيمانة (Semaine)</span>
+          </button>
+          <button class="period-pill" data-period="month">
+            <i class="fa-solid fa-calendar-days"></i>
+            <span>هاد الشهر (Mois)</span>
+          </button>
+          <button class="period-pill" data-period="year">
+            <i class="fa-solid fa-calendar"></i>
+            <span>هاد العام (Année)</span>
+          </button>
+          <button class="period-pill" data-period="all">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>كلشي (Tout)</span>
+          </button>
+          <button class="period-pill" data-period="custom">
+            <i class="fa-solid fa-sliders"></i>
+            <span>تاريخ محدد (Personnalisé)</span>
+          </button>
+        </div>
+
+        <!-- Custom Date Range Picker (Hidden by default) -->
+        <div class="custom-range-card" id="customRangeCard" style="display: none;">
+          <div class="date-input-group">
+            <label for="startDateInput">من تاريخ:</label>
+            <input type="date" id="startDateInput" class="form-input">
+          </div>
+          <div class="date-input-group">
+            <label for="endDateInput">إلى تاريخ:</label>
+            <input type="date" id="endDateInput" class="form-input">
+          </div>
+          <button class="btn btn-primary" id="btnApplyCustomDates">
+            <i class="fa-solid fa-check"></i> تطبيق
+          </button>
+        </div>
+      </section>
+
+      <!-- KPI Summary Cards -->
+      <section class="kpi-grid">
+        <!-- Income Card -->
+        <div class="kpi-card income-kpi">
+          <div class="kpi-header">
+            <div class="kpi-icon-wrap">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+            <span class="kpi-label">مجموع المداخيل (Revenus)</span>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpiTotalIncome">0.00 <span class="currency">DH</span></div>
+            <p class="kpi-sub" id="kpiIncomeSub">مداخيل التعاونية اليومية</p>
+          </div>
+        </div>
+
+        <!-- Expense Card -->
+        <div class="kpi-card expense-kpi">
+          <div class="kpi-header">
+            <div class="kpi-icon-wrap">
+              <i class="fa-solid fa-arrow-trend-down"></i>
+            </div>
+            <span class="kpi-label">مجموع المصاريف (Dépenses)</span>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpiTotalExpense">0.00 <span class="currency">DH</span></div>
+            <p class="kpi-sub" id="kpiExpenseSub">تكاليف الكسابة، النقل والعلف</p>
+          </div>
+        </div>
+
+        <!-- Net Balance Card -->
+        <div class="kpi-card balance-kpi" id="kpiBalanceCard">
+          <div class="kpi-header">
+            <div class="kpi-icon-wrap">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+            <span class="kpi-label">الربح الصافي / الباقي (Solde Net)</span>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpiNetBalance">0.00 <span class="currency">DH</span></div>
+            <p class="kpi-sub" id="kpiBalanceSub">المداخيل ناقص المصاريف</p>
+          </div>
+        </div>
+
+        <!-- Operations Count -->
+        <div class="kpi-card info-kpi">
+          <div class="kpi-header">
+            <div class="kpi-icon-wrap">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <span class="kpi-label">عدد العمليات (Opérations)</span>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpiCount">0</div>
+            <p class="kpi-sub">عملية مسجلة في هذه الفترة</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Action Buttons (Add Income / Add Expense) -->
+      <section class="quick-actions-bar">
+        <button class="btn btn-action btn-add-income" id="btnQuickAddIncome">
+          <i class="fa-solid fa-circle-plus"></i>
+          <div class="action-text">
+            <strong>+ تسجيل مدخول اليوم</strong>
+            <small>المبلغ الإجمالي لي دخلات التعاونية اليوم (Recette)</small>
+          </div>
+        </button>
+
+        <button class="btn btn-action btn-add-expense" id="btnQuickAddExpense">
+          <i class="fa-solid fa-circle-minus"></i>
+          <div class="action-text">
+            <strong>- تسجيل مصروف جديد</strong>
+            <small>شراء الحليب، النقل، الأعلاف، خدامة...</small>
+          </div>
+        </button>
+
+        <button class="btn btn-action btn-kounach-action" id="btnQuickKounach">
+          <i class="fa-solid fa-book-bookmark"></i>
+          <div class="action-text">
+            <strong>📒 كناش الكريدي والديون</strong>
+            <small>شحال كيتسالنا، شحال خلصنا، وشحال باقي</small>
+          </div>
+          <span class="kounach-action-badge" id="quickKounachBadge">باقي: 0 DH</span>
+        </button>
+      </section>
+
+      <!-- Charts Section -->
+      <section class="charts-section">
+        <div class="chart-card main-chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i class="fa-solid fa-chart-column"></i>
+              <h3 id="trendsChartTitle">مقارنة المداخيل والمصاريف حسب الأيام</h3>
+            </div>
+            <span class="chart-badge" id="chartPeriodBadge">هذا الشهر</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="trendsChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card side-chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i class="fa-solid fa-chart-pie"></i>
+              <h3>توزيع المصاريف (فين كيمشيو الفلوس)</h3>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap doughnut-wrap">
+            <canvas id="expensePieChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Category Expenses Summary (Week, Month, Year) -->
+      <section class="cat-summary-section">
+        <div class="cat-summary-card">
+          <div class="cat-summary-header">
+            <div class="cat-summary-title">
+              <div class="title-icon">
+                <i class="fa-solid fa-calculator"></i>
+              </div>
+              <div>
+                <h3>📊 مجموع مصاريف الأصناف (بالسيمانة، الشهر، والعام)</h3>
+                <p>تتبع دقيق وشامل لمصاريف كل صنف: شحال تخسر فـ هاد السيمانة، هاد الشهر، وفـ هاد العام كامل</p>
+              </div>
+            </div>
+            <div class="cat-summary-tabs">
+              <button class="btn-summary-tab active" data-view="comparative">
+                <i class="fa-solid fa-table-columns"></i>
+                <span>جدول مقارن شامل</span>
+              </button>
+              <button class="btn-summary-tab" data-view="week">
+                <i class="fa-solid fa-calendar-week"></i>
+                <span>هاد السيمانة (Semaine)</span>
+              </button>
+              <button class="btn-summary-tab" data-view="month">
+                <i class="fa-solid fa-calendar-days"></i>
+                <span>هاد الشهر (Mois)</span>
+              </button>
+              <button class="btn-summary-tab" data-view="year">
+                <i class="fa-solid fa-calendar"></i>
+                <span>هاد العام (Année)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Totals Quick Banner (4 Boxes: Semaine, Mois, Année, Dettes) -->
+          <div class="summary-totals-banner">
+            <div class="total-badge-box week-box">
+              <div class="tb-icon"><i class="fa-solid fa-calendar-week"></i></div>
+              <div class="tb-info">
+                <span class="tb-label">مجموع مصاريف هاد السيمانة:</span>
+                <strong class="tb-val" id="catTotalWeekExp">0.00 DH</strong>
+              </div>
+            </div>
+            <div class="total-badge-box month-box">
+              <div class="tb-icon"><i class="fa-solid fa-calendar-days"></i></div>
+              <div class="tb-info">
+                <span class="tb-label">مجموع مصاريف هاد الشهر:</span>
+                <strong class="tb-val" id="catTotalMonthExp">0.00 DH</strong>
+              </div>
+            </div>
+            <div class="total-badge-box year-box">
+              <div class="tb-icon"><i class="fa-solid fa-calendar"></i></div>
+              <div class="tb-info">
+                <span class="tb-label">مجموع مصاريف هاد العام:</span>
+                <strong class="tb-val" id="catTotalYearExp">0.00 DH</strong>
+              </div>
+            </div>
+            <div class="total-badge-box debt-box" id="catTotalDebtBannerBox" style="cursor: pointer;" title="اضغط لفتح كناش الكريدي والديون">
+              <div class="tb-icon"><i class="fa-solid fa-book-bookmark"></i></div>
+              <div class="tb-info">
+                <span class="tb-label">مجموع لي كيتسالونا (Dettes):</span>
+                <strong class="tb-val" id="catTotalDebtExp">0.00 DH</strong>
+                <small class="tb-sub" id="catTotalDebtSub">0 كيتسالو</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Container for Comparative Table or Single Period View -->
+          <div class="cat-summary-body" id="catSummaryContainer">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Transactions List / Management Section -->
+      <section class="transactions-section">
+        <div class="section-top-bar">
+          <div class="section-title-wrap">
+            <i class="fa-solid fa-list-check"></i>
+            <h2>سجل العمليات (Journal des Opérations)</h2>
+          </div>
+
+          <div class="table-filters">
+            <!-- Search -->
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="txSearchInput" placeholder="بحث بالوصف، النوع، طريقة الدفع...">
+            </div>
+
+            <!-- Filter Type -->
+            <select id="txTypeFilter" class="filter-select">
+              <option value="all">كل العمليات (Tous)</option>
+              <option value="mad5oul">المداخيل فقط (Revenus)</option>
+              <option value="masrouf">المصاريف فقط (Dépenses)</option>
+            </select>
+
+            <!-- Filter Category -->
+            <select id="txCategoryFilter" class="filter-select">
+              <option value="all">كل الأصناف (Toutes Catégories)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Transactions Container -->
+        <div class="transactions-card">
+          <div class="table-responsive">
+            <table class="tx-table" id="txTable">
+              <thead>
+                <tr>
+                  <th>النوع</th>
+                  <th>الصنف</th>
+                  <th>المبلغ (DH)</th>
+                  <th>الوصف والملاحظات</th>
+                  <th>طريقة الدفع</th>
+                  <th>التاريخ والوقت</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="txTableBody">
+                <!-- Injected dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <h3>لا توجد أي عملية في هذه الفترة</h3>
+            <p>اضغط على أحد الأزرار أعلاه لتسجيل مدخول أو مصروف جديد.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+      <div class="footer-inner">
+        <p>تعاونية أجبان الخير &copy; 2026 &bull; نظام التسيير المالي الداخلي</p>
+        <span class="footer-ip">📱 رابط الهاتف: <strong id="footerIpLink">http://{{ local_ip }}:{{ port }}</strong></span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- MODAL: ADD / EDIT TRANSACTION -->
+  <div class="modal-overlay" id="txModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">تسجيل عملية جديدة</h3>
+        <button class="btn-close" id="btnCloseTxModal">&times;</button>
+      </div>
+
+      <form id="txForm" class="modal-form">
+        <input type="hidden" id="editTxId" value="">
+
+        <!-- Transaction Type Switcher -->
+        <div class="type-segmented">
+          <button type="button" class="type-segment active income-segment" id="btnSelectIncome" data-type="mad5oul">
+            <i class="fa-solid fa-arrow-up-right-dots"></i>
+            <span>مدخول (Revenu)</span>
+          </button>
+          <button type="button" class="type-segment expense-segment" id="btnSelectExpense" data-type="masrouf">
+            <i class="fa-solid fa-arrow-down-right-dots"></i>
+            <span>مصروف (Dépense)</span>
+          </button>
+        </div>
+        <input type="hidden" id="txTypeInput" value="mad5oul">
+
+        <!-- Amount Input with Quick Preset Chips -->
+        <div class="form-group">
+          <label for="txAmountInput">المبلغ بالدرهم (Montant en DH) <span class="required">*</span></label>
+          <div class="amount-input-wrap">
+            <input type="number" step="0.01" min="0.1" id="txAmountInput" class="form-input form-input-lg" placeholder="0.00" required>
+            <span class="currency-tag">DH</span>
+          </div>
+          <!-- Quick Amount Chips -->
+          <div class="quick-chips">
+            <button type="button" class="chip" data-val="50">+50</button>
+            <button type="button" class="chip" data-val="100">+100</button>
+            <button type="button" class="chip" data-val="200">+200</button>
+            <button type="button" class="chip" data-val="500">+500</button>
+            <button type="button" class="chip" data-val="1000">+1000</button>
+            <button type="button" class="chip" data-val="2500">+2500</button>
+          </div>
+        </div>
+
+        <!-- Category Dropdown + Custom Category -->
+        <div class="form-group">
+          <div class="label-with-action">
+            <label for="txCategorySelect">الصنف (Catégorie) <span class="required">*</span></label>
+            <button type="button" class="btn-link" id="btnManageCatsFromModal">
+              <i class="fa-solid fa-gear"></i> مسح أو إضافة أصناف
+            </button>
+          </div>
+          <select id="txCategorySelect" class="form-input" required>
+            <!-- Loaded dynamically based on type -->
+          </select>
+          <input type="text" id="txCustomCategoryInput" class="form-input mt-2" placeholder="أو اكتب صنفا جديدا هنا..." style="display: none;">
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label for="txDescInput">الوصف أو ملاحظة (Détails / Remarques)</label>
+          <input type="text" id="txDescInput" class="form-input" placeholder="مثال: بيع 30 كغ جبن، أو شراء حليب الصباح...">
+        </div>
+
+        <div class="form-row-2">
+          <!-- Payment Method -->
+          <div class="form-group">
+            <label for="txPaymentSelect">طريقة الدفع (Paiement)</label>
+            <select id="txPaymentSelect" class="form-input">
+              <option value="Kache / Espèces">نقدًا (كاش / Espèces)</option>
+              <option value="Virement bancaire">تحويل بنكي (Virement)</option>
+              <option value="Chèque">شيك (Chèque)</option>
+              <option value="Autre">أخرى</option>
+            </select>
+          </div>
+
+          <!-- Date & Time -->
+          <div class="form-group">
+            <label for="txDateInput">التاريخ والوقت</label>
+            <div class="datetime-inputs">
+              <input type="date" id="txDateInput" class="form-input" required>
+              <input type="time" id="txTimeInput" class="form-input" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit & Cancel -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelTxModal">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveTx">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>حفظ العملية</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: MOBILE CONNECT & QR CODE -->
+  <div class="modal-overlay" id="mobileModal" style="display: none;">
+    <div class="modal-card modal-mobile">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-mobile-screen-button"></i> فتح الموقع في الهاتف</h3>
+        <button class="btn-close" id="btnCloseMobileModal">&times;</button>
+      </div>
+      <div class="modal-body text-center">
+        <p class="mobile-instruction">
+          باش تخدم بهاد السيت فـ التيليفون ديالك فـ نفس شبكة الـ Wi-Fi، سكانِي هاد الـ QR Code بكاميرا الهاتف أولا دخل للرابط:
+        </p>
+
+        <!-- QR Code Container -->
+        <div class="qr-wrapper">
+          <img id="qrCodeImg" src="" alt="QR Code" class="qr-code-img">
+        </div>
+
+        <!-- URL Box with Copy button -->
+        <div class="url-copy-box">
+          <input type="text" id="mobileUrlInput" readonly value="http://{{ local_ip }}:{{ port }}">
+          <button class="btn btn-primary" id="btnCopyMobileUrl" title="نسخ الرابط">
+            <i class="fa-solid fa-copy"></i> نسخ
+          </button>
+        </div>
+
+        <!-- Direct 1-Click Install Button in Modal -->
+        <div class="modal-install-wrap" id="modalInstallWrap" style="display: none; margin: 16px 0;">
+          <button class="btn btn-primary btn-block btn-lg" id="btnModalInstallApp">
+            <i class="fa-solid fa-download"></i>
+            <span>📲 تثبيت التطبيق الآن فـ الهاتف (Installer)</span>
+          </button>
+        </div>
+
+        <!-- PWA Instructions -->
+        <div class="pwa-steps">
+          <h4>💡 كيفاش ترجعو بحال App فـ الهاتف:</h4>
+          <ol>
+            <li>يلا طلع ليك زر <strong>"تثبيت App"</strong> الفوق، اضغط عليه ومباشرة غادي يتثبت.</li>
+            <li>أو فـ متصفح <strong>Google Chrome</strong> فـ التيليفون: اضغط على النقط الثلاث الفوق <i class="fa-solid fa-ellipsis-vertical"></i> واختر <strong>"Installer l'application" (تثبيت التطبيق)</strong>.</li>
+            <li>فـ آيفون (Safari): اضغط على زر المشاركة <i class="fa-solid fa-arrow-up-from-bracket"></i> واختر <strong>"Sur l'écran d'accueil" (إضافة للشاشة الرئيسية)</strong>.</li>
+            <li>غادي يولي عندك تطبيق مخصص باسم <strong>"أجبان الخير"</strong> كيتفتح مباشرة!</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CATEGORY MANAGER (ADD & DELETE CATEGORIES) -->
+  <div class="modal-overlay" id="categoryModal" style="display: none;">
+    <div class="modal-card modal-category">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-tags"></i> تسيير الأصناف (مسح وإضافة)</h3>
+        <button class="btn-close" id="btnCloseCatModal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="category-manager-desc">
+          هنا تقدر <strong>ترتب الأصناف بالأسهم (▲ / ▼)</strong> باش لي كتخدم بيهم بزاف يبانو هما اللولين، أو <strong>تمسح</strong> (🗑️) و<strong>تزيد أصناف جديدة</strong>:
+        </p>
+
+        <!-- Category Segment Switcher -->
+        <div class="type-segmented cat-manager-tabs">
+          <button type="button" class="type-segment expense-segment active" id="btnCatTabExpense" data-type="masrouf">
+            <i class="fa-solid fa-arrow-down-right-dots"></i>
+            <span>أصناف المصاريف (Masarif)</span>
+          </button>
+          <button type="button" class="type-segment income-segment" id="btnCatTabIncome" data-type="mad5oul">
+            <i class="fa-solid fa-arrow-up-right-dots"></i>
+            <span>أصناف المداخيل (Mada5il)</span>
+          </button>
+        </div>
+
+        <!-- Add Category Form -->
+        <form id="addCategoryForm" class="add-cat-inline-form">
+          <input type="text" id="newCatInput" class="form-input" placeholder="اكتب صنفاً جديداً (مثال: تأمين، شراء بقرة، مواد تنظيف...)" required>
+          <button type="submit" class="btn btn-primary" id="btnAddCatSubmit">
+            <i class="fa-solid fa-plus"></i> إضافة
+          </button>
+        </form>
+
+        <!-- Category Items List -->
+        <div class="cat-list-scroll">
+          <ul class="cat-chip-list" id="catChipList">
+            <!-- Dynamically injected -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DELETE CONFIRMATION -->
+  <div class="modal-overlay" id="deleteModal" style="display: none;">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h3>تأكيد الحذف</h3>
+        <button class="btn-close" id="btnCloseDeleteModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>واش متأكد باغي تمسح هاد العملية نهائياً؟ هاد الإجراء ما يمكنش التراجع عليه.</p>
+        <input type="hidden" id="deleteTargetId" value="">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btnCancelDelete">إلغاء</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmDelete">
+          <i class="fa-solid fa-trash"></i> نعم، مسح
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 1: KOUNACH MAIN LEDGER MODAL
+       ========================================================================== -->
+  <div class="modal-overlay" id="kounachModal" style="display: none;">
+    <div class="modal-card modal-kounach">
+      <div class="modal-header kounach-modal-header">
+        <div class="kounach-header-title">
+          <div class="kounach-icon-circle">
+            <i class="fa-solid fa-book-bookmark"></i>
+          </div>
+          <div>
+            <h3>📒 كناش الكريدي والديون (Carnet des Dettes)</h3>
+            <p>تتبع دقيق لحسابات الكسابة والموردين: شحال كيتسالنا، شحال خلصنا وشحال باقي لينا</p>
+          </div>
+        </div>
+        <button class="btn-close" id="btnCloseKounachModal">&times;</button>
+      </div>
+
+      <div class="modal-body kounach-modal-body">
+        <!-- 4 Kounach KPI Cards -->
+        <div class="kounach-kpi-grid">
+          <div class="kounach-kpi-card kpi-due">
+            <div class="kounach-kpi-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+            <div class="kounach-kpi-info">
+              <span class="kounach-kpi-label">مجموع ما كايتسالنا (Total Dû)</span>
+              <strong class="kounach-kpi-val" id="kounachKpiTotalDue">0.00 DH</strong>
+              <small>إجمالي الفواتير والسلع المسجلة</small>
+            </div>
+          </div>
+
+          <div class="kounach-kpi-card kpi-paid">
+            <div class="kounach-kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="kounach-kpi-info">
+              <span class="kounach-kpi-label">مجموع ما خلصنا (Total Payé)</span>
+              <strong class="kounach-kpi-val" id="kounachKpiTotalPaid">0.00 DH</strong>
+              <small>الدفعات والتسبيقات المسددة</small>
+            </div>
+          </div>
+
+          <div class="kounach-kpi-card kpi-remaining">
+            <div class="kounach-kpi-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+            <div class="kounach-kpi-info">
+              <span class="kounach-kpi-label">الباقي لي كايتسالنا (Reste à Payer)</span>
+              <strong class="kounach-kpi-val" id="kounachKpiTotalRemaining">0.00 DH</strong>
+              <small>الديون المتبقية للوفاء بها</small>
+            </div>
+          </div>
+
+          <div class="kounach-kpi-card kpi-count">
+            <div class="kounach-kpi-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="kounach-kpi-info">
+              <span class="kounach-kpi-label">عدد الحسابات (Personnes)</span>
+              <strong class="kounach-kpi-val" id="kounachKpiAccountsCount">0</strong>
+              <small id="kounachKpiSubCount">0 باقي كيتسالنا &bull; 0 مخلص</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="kounach-toolbar">
+          <div class="kounach-search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="kounachSearchInput" class="kounach-search-input" placeholder="ابحث باسم الكساب، المورد، أو رقم الهاتف...">
+          </div>
+
+          <div class="kounach-filters-group">
+            <select id="kounachCategoryFilter" class="kounach-filter-select">
+              <option value="all">كل الفئات (Toutes Catégories)</option>
+              <option value="كساب (حليب)">كسابة الحليب</option>
+              <option value="أعلاف وتغذية">الأعلاف والتغذية</option>
+              <option value="نقل ومحروقات">النقل والمحروقات</option>
+              <option value="أدوية وبيطرة">الأدوية والبيطرة</option>
+              <option value="صيانة">الصيانة والإصلاح</option>
+              <option value="أخرى">أصناف أخرى</option>
+            </select>
+
+            <div class="kounach-status-tabs">
+              <button class="kounach-status-btn active" data-status="all">الكل</button>
+              <button class="kounach-status-btn" data-status="active">باقي كيتسال</button>
+              <button class="kounach-status-btn" data-status="settled">مخلص كامل</button>
+            </div>
+
+            <button class="btn btn-primary btn-add-person" id="btnOpenAddPersonModal">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>+ إضافة حساب جديد</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Accounts Grid List -->
+        <div class="kounach-accounts-container" id="kounachAccountsContainer">
+          <!-- Dynamically populated via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 2: ADD / EDIT KOUNACH ACCOUNT
+       ========================================================================== -->
+  <div class="modal-overlay" id="kounachPersonModal" style="display: none;">
+    <div class="modal-card modal-md">
+      <div class="modal-header">
+        <h3 id="kounachPersonModalTitle"><i class="fa-solid fa-user-plus"></i> إضافة شخص جديد في الكناش</h3>
+        <button class="btn-close" id="btnClosePersonModal">&times;</button>
+      </div>
+      <form id="kounachPersonForm">
+        <input type="hidden" id="editPersonId" value="">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="personNameInput">اسم الشخص / الكساب / الشركة <span class="required">*</span></label>
+            <input type="text" id="personNameInput" class="form-input" placeholder="مثال: با بوشعيب الكساب، شركة الأعلاف، سي المكي..." required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="personPhoneInput">رقم الهاتف (Téléphone)</label>
+              <input type="tel" id="personPhoneInput" class="form-input" placeholder="06XXXXXXXX">
+            </div>
+            <div class="form-group">
+              <label for="personCategorySelect">الفئة (Catégorie)</label>
+              <select id="personCategorySelect" class="form-input">
+                <option value="كساب (حليب)">كساب (حليب)</option>
+                <option value="أعلاف وتغذية">أعلاف وتغذية</option>
+                <option value="نقل ومحروقات">نقل ومحروقات</option>
+                <option value="أدوية وبيطرة">أدوية وبيطرة</option>
+                <option value="صيانة">صيانة وإصلاح</option>
+                <option value="تغليف ومواد">تغليف ومواد</option>
+                <option value="أخرى">أخرى</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row" id="initialAmountsRow">
+            <div class="form-group">
+              <label for="personInitialDue">المبلغ الأصلي لي كايتسالنا (Total Dû)</label>
+              <div class="amount-input-wrap">
+                <input type="number" step="any" min="0" id="personInitialDue" class="form-input" placeholder="0.00">
+                <span class="currency-tag">DH</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="personInitialPaid">المبلغ لي سبق لينا خلصناه (Déjà Payé)</label>
+              <div class="amount-input-wrap">
+                <input type="number" step="any" min="0" id="personInitialPaid" class="form-input" placeholder="0.00">
+                <span class="currency-tag">DH</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="personNotesInput">ملاحظات ومعلومات إضافية (الدوار، نوع المعاملة...)</label>
+            <textarea id="personNotesInput" class="form-input" rows="2" placeholder="مثال: كساب من دوار أولاد علي، خلاص كل 15 يوم..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelPersonModal">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="btnSavePerson">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>حفظ الحساب 📒</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 3: ADD KOUNACH OPERATION (PAYMENT OR CREDIT)
+       ========================================================================== -->
+  <div class="modal-overlay" id="kounachOpModal" style="display: none;">
+    <div class="modal-card modal-md">
+      <div class="modal-header">
+        <h3 id="kounachOpModalTitle"><i class="fa-solid fa-hand-holding-dollar"></i> تسجيل عملية جديدة في الكناش</h3>
+        <button class="btn-close" id="btnCloseOpModal">&times;</button>
+      </div>
+      <form id="kounachOpForm">
+        <input type="hidden" id="opAccountId" value="">
+        <div class="modal-body">
+          <div class="op-person-badge-wrap">
+            <span class="op-person-label">الحساب المعني:</span>
+            <strong class="op-person-name" id="opPersonNameText">-</strong>
+            <span class="op-person-rem" id="opPersonRemText">الباقي الحالي: 0.00 DH</span>
+          </div>
+
+          <!-- Operation Type Selector -->
+          <div class="type-segmented op-type-segmented">
+            <button type="button" class="type-segment expense-segment active" id="btnOpTypePayment" data-op="payment">
+              <i class="fa-solid fa-money-bill-wave"></i>
+              <span>تسجيل خلاص / دفعة (خروج فلوس 💸)</span>
+            </button>
+            <button type="button" class="type-segment income-segment" id="btnOpTypeCredit" data-op="credit">
+              <i class="fa-solid fa-circle-plus"></i>
+              <span>زيادة كريدي / سلعة (تزادت فالحساب ➕)</span>
+            </button>
+          </div>
+          <input type="hidden" id="opTypeInput" value="payment">
+
+          <!-- Amount -->
+          <div class="form-group">
+            <label for="opAmountInput">المبلغ (Montant) <span class="required">*</span></label>
+            <div class="amount-input-wrap">
+              <input type="number" step="any" min="0.01" id="opAmountInput" class="form-input form-input-lg" placeholder="0.00" required>
+              <span class="currency-tag">DH</span>
+            </div>
+          </div>
+
+          <!-- Date -->
+          <div class="form-group">
+            <label for="opDateInput">تاريخ العملية (Date) <span class="required">*</span></label>
+            <input type="date" id="opDateInput" class="form-input" required>
+          </div>
+
+          <!-- Notes -->
+          <div class="form-group">
+            <label for="opNotesInput">البيان / ملاحظة (Détails / N° Chèque...)</label>
+            <input type="text" id="opNotesInput" class="form-input" placeholder="مثال: دفعة أسبوعية، شيك رقم 12345، كاش...">
+          </div>
+
+          <!-- Auto-record in Transactions Checkbox -->
+          <div class="form-checkbox-wrap" id="autoExpenseCheckboxWrap">
+            <label class="custom-checkbox-label">
+              <input type="checkbox" id="chkRecordInTransactions" checked>
+              <span class="checkbox-text">
+                <strong>تسجيل هاد الخلاص أوتوماتيكياً فـ مصاريف اليوم؟</strong>
+                <small>غادي تزيد عملية مصروف فـ سجل العمليات اليومية باش يبقى الصندوق مضبوط</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelOpModal">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveOp">
+            <i class="fa-solid fa-check"></i>
+            <span>تأكيد وتسجيل العملية ✅</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 4: KOUNACH ACCOUNT LEDGER & HISTORY
+       ========================================================================== -->
+  <div class="modal-overlay" id="kounachLedgerModal" style="display: none;">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 id="ledgerModalTitle"><i class="fa-solid fa-receipt"></i> كشف حساب الكناش</h3>
+          <p id="ledgerModalSub" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 2px;">سجل جميع السلع والدفعات المسجلة</p>
+        </div>
+        <button class="btn-close" id="btnCloseLedgerModal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Account Snapshot Card -->
+        <div class="ledger-snapshot-card">
+          <div class="lsc-item">
+            <span>كايتسالنا (Total Dû)</span>
+            <strong id="ledgerDueVal">0.00 DH</strong>
+          </div>
+          <div class="lsc-item">
+            <span>خلصنا (Total Payé)</span>
+            <strong id="ledgerPaidVal">0.00 DH</strong>
+          </div>
+          <div class="lsc-item lsc-remaining">
+            <span>الباقي الصافي (Reste)</span>
+            <strong id="ledgerRemVal">0.00 DH</strong>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnLedgerAddOp">
+            <i class="fa-solid fa-plus"></i> عملية جديدة
+          </button>
+        </div>
+
+        <!-- Operations Table -->
+        <div class="ledger-table-wrap">
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>نوع العملية</th>
+                <th>المبلغ</th>
+                <th>البيان والملاحظات</th>
+                <th>حذف</th>
+              </tr>
+            </thead>
+            <tbody id="ledgerTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 5: MOBILE CONNECTION & PWA APP INSTALLATION
+       ========================================================================== -->
+  <div class="modal-overlay" id="mobileModal" style="display: none;">
+    <div class="modal-card modal-md">
+      <div class="modal-header">
+        <div>
+          <h3><i class="fa-solid fa-mobile-screen-button"></i> فتح وتثبيت التطبيق فـ الهاتف 📱</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 2px;">تطبيق أجبان الخير PWA على التيليفون مع التزامن الحي الفوري</p>
+        </div>
+        <button class="btn-close" id="btnCloseMobileModal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Direct 1-Click Install Button if PWA available -->
+        <div class="modal-install-wrap" id="modalInstallWrap" style="display: none;">
+          <div class="install-prompt-banner">
+            <div class="ipb-text">
+              <i class="fa-solid fa-cloud-arrow-down ipb-icon"></i>
+              <div>
+                <strong>تثبيت التطبيق على جهازك مباشرة!</strong>
+                <p>اضغط للتحميل والتثبيت السريع دون الحاجة للمتجر</p>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="btnModalInstallApp">
+              <i class="fa-solid fa-download"></i> تثبيت التطبيق الآن
+            </button>
+          </div>
+        </div>
+
+        <!-- Direct Android APK Download Card -->
+        <div class="apk-download-box" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 78, 59, 0.3)); border: 2px solid #10b981; border-radius: 14px; padding: 20px; text-align: center;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 14px;">
+            <div style="width: 52px; height: 52px; border-radius: 14px; background: #10b981; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.8rem;">
+              <i class="fa-brands fa-android"></i>
+            </div>
+            <div style="text-align: right;">
+              <h4 style="margin: 0; font-size: 1.2rem; color: #fff; font-weight: 800;">تحميل تطبيق أندرويد (ملف APK مباشر) 📦</h4>
+              <p style="margin: 3px 0 0; font-size: 0.88rem; color: var(--text-muted);">ملف التطبيق الجاهز للتثبيت فـ الهاتف فوراً (805 KB)</p>
+            </div>
+          </div>
+          <a href="/static/assets/Ajban_Al_Khair.apk" download="Ajban_Al_Khair.apk" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 10px; font-size: 1.05rem; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 800; background: linear-gradient(135deg, #059669, #10b981); color: #fff; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);">
+            <i class="fa-solid fa-download"></i>
+            <span>تحميل ملف APK الآن (Télécharger APK)</span>
+          </a>
+        </div>
+
+        <!-- Connection Card -->
+        <div class="mobile-connect-box">
+          <div class="mcb-header">
+            <i class="fa-solid fa-globe mcb-wifi-icon"></i>
+            <div>
+              <strong>رابط الدخول والتثبيت المباشر فـ الهاتف (HTTPS) 📱</strong>
+              <p>كيخدم فـ أي هاتف بـ الويفي أو 4G/5G مباشرة وبلا تعقيدات!</p>
+            </div>
+          </div>
+
+          <div class="mobile-url-box">
+            <input type="text" id="mobileUrlDisplay" readonly value="جاري الكشف عن العنوان...">
+            <button class="btn btn-primary btn-sm" id="btnCopyMobileUrl" title="نسخ الرابط">
+              <i class="fa-solid fa-copy"></i> <span>نسخ الرابط</span>
+            </button>
+          </div>
+
+          <!-- QR Code Container -->
+          <div class="qr-preview-box">
+            <div class="qr-box-inner" id="qrContainer">
+              <img id="qrImage" src="" alt="QR Code" style="display: none; width: 160px; height: 160px; border-radius: 10px;">
+              <div id="qrLoading" style="padding: 20px; color: var(--text-muted); font-size: 0.9rem;">
+                <i class="fa-solid fa-qrcode fa-2x"></i>
+                <p style="margin-top: 8px;">امسح الكود بكاميرا التيليفون للدخول المباشر</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step-by-Step Installation Instructions -->
+        <div class="install-steps-accordion">
+          <div class="isa-title"><i class="fa-solid fa-circle-question"></i> كيفاش تثبتو كـ تطبيق فـ الهاتف؟ (Installer PWA)</div>
+
+          <!-- Android Steps -->
+          <div class="step-card">
+            <div class="step-badge android-badge"><i class="fa-brands fa-android"></i> أندرويد (Android / Chrome)</div>
+            <ol class="step-list">
+              <li>افتح الرابط أعلاه فـ متصفح <strong>Google Chrome</strong> فـ التيليفون ديالك.</li>
+              <li>غادي يظهر لك شريط فـ الأسفل <strong>"تثبيت أجبان الخير"</strong> (أو اضغط على 3 نقاط ⋮ في أعلى المتصفح).</li>
+              <li>اضغط على <strong>"تثبيت التطبيق" (Installer l'application)</strong> أو <strong>"Ajouter à l'écran d'accueil"</strong>.</li>
+              <li>صافي! التطبيق غادي يظهر فـ شاشة الهاتف مع التطبيقات الرسمية بأيقونة التعاونية.</li>
+            </ol>
+          </div>
+
+          <!-- iOS Steps -->
+          <div class="step-card">
+            <div class="step-badge apple-badge"><i class="fa-brands fa-apple"></i> آيفون (iPhone / Safari)</div>
+            <ol class="step-list">
+              <li>افتح الرابط فـ متصفح <strong>Safari</strong> فـ الآيفون.</li>
+              <li>اضغط على زر المشاركة فـ الأسفل <strong><i class="fa-solid fa-arrow-up-from-bracket"></i> (Partager / Share)</strong>.</li>
+              <li>انزل قليلاً واضغط على <strong>"Sur l'écran d'accueil" (إضافة إلى الصفحة الرئيسية)</strong>.</li>
+              <li>اضغط <strong>Ajouter</strong>، وغادي يولي عندك تطبيق كامل بلا شريط البحث!</li>
+            </ol>
+          </div>
+
+          <!-- Live Sync Note -->
+          <div class="sync-info-note">
+            <i class="fa-solid fa-bolt sync-info-icon"></i>
+            <div>
+              <strong>ميزة التزامن التلقائي الحي (Live Sync):</strong>
+              <p>أي عملية كتزيدها فـ البيسي أو التيليفون كتوصل للطرف الآخر فـ الحين بلا ما تحتاج تدير Actualiser، وإذا درنا ميزاجور فـ البرنامج كيعطيك التيليفون تنبيه فوري باللي كاين تحديث جديد!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- App JS -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
