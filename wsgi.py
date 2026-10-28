@@ -7,6 +7,8 @@ if BASE_DIR not in sys.path:
 
 from ajban_al_khair.app import app as application, init_db
 
+app = application
+
 init_db()
 
 if __name__ == "__main__":
