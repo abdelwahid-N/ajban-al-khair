@@ -3,6 +3,36 @@
  * JavaScript Logic for Financial Management & Visual Analytics
  */
 
+// Bulletproof Storage polyfill: Ensure localStorage never throws SecurityError in restricted WebViews
+(function() {
+  try {
+    const testKey = "__ajban_test__";
+    window.localStorage.setItem(testKey, testKey);
+    window.localStorage.removeItem(testKey);
+  } catch (err) {
+    console.warn("Native localStorage restricted or disabled in WebView. Activating in-memory safeStorage polyfill.");
+    const memStore = {};
+    const mockStorage = {
+      getItem: function(k) { return Object.prototype.hasOwnProperty.call(memStore, k) ? memStore[k] : null; },
+      setItem: function(k, v) { memStore[k] = String(v); },
+      removeItem: function(k) { delete memStore[k]; },
+      clear: function() { for (let k in memStore) delete memStore[k]; },
+      get length() { return Object.keys(memStore).length; },
+      key: function(i) { return Object.keys(memStore)[i] || null; }
+    };
+    try {
+      Object.defineProperty(window, "localStorage", {
+        value: mockStorage,
+        configurable: true,
+        enumerable: true,
+        writable: true
+      });
+    } catch (e) {
+      window.localStorage = mockStorage;
+    }
+  }
+})();
+
 // Global Application State
 const state = {
   period: "today",
@@ -1223,13 +1253,42 @@ function copyMobileUrl() {
 /* ==========================================================================
    Export CSV
    ========================================================================== */
-function handleExportCSV() {
+async function handleExportCSV() {
   let url = `/api/export/csv?period=${encodeURIComponent(state.period)}`;
   if (state.period === "custom") {
     url += `&start_date=${encodeURIComponent(state.startDate)}&end_date=${encodeURIComponent(state.endDate)}`;
   }
-  window.open(url, "_blank");
-  showToast("جاري تحميل ملف Excel / CSV...", "success");
+  showToast("جاري إعداد تقرير العمليات... 📊", "info");
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("تعذر تحميل التقرير من السيرفر");
+    const csvText = await res.text();
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(csvText);
+      showToast("✅ تم نسخ التقرير كاملاً إلى الحافظة! يمكنك لصقه فـ واتساب أو إكسيل.", "success");
+    } else {
+      showToast("✅ تم تجهيز التقرير بنجاح!", "success");
+    }
+
+    // Only try direct file download outside of restricted WebViews
+    const isRestrictedWebView = /wv|Android.*Version\/[0-9.]+/i.test(navigator.userAgent);
+    if (!isRestrictedWebView) {
+      const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `ajban_al_khair_rapport_${state.period}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  } catch (err) {
+    console.warn("Export CSV error:", err);
+    try {
+      window.open(url, "_blank");
+    } catch (e) {}
+  }
 }
 
 /* ==========================================================================
